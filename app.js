@@ -19,6 +19,8 @@ req , res ) = > { const { ' hub.mode ' : mode , ' hub.challenge ' : challenge , 
     console.log ( ' WEBHOOK ПРОВЕРЕН' ) ; 
     res.status ( 200 ) .send ( challenge ) ; } else { 
     res.status ( 403 ) .end ( ); } } ) ;    
+    
+  
 
 
 // Маршрут для POST-запросов app.post 
@@ -31,4 +33,4 @@ req , res ) = > { const { ' hub.mode ' : mode , ' hub.challenge ' : challenge , 
 
 // Запустить серверное 
 приложение . listen ( port , () => { 
-  console . log (` \n Прослушивание порта $ { port } \n `); });   
+  console . log (` \n Прослушивание порта $ { port } \n `); });  
