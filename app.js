@@ -29,11 +29,11 @@ app.post('/', async (req, res) => {
 
   try {
     // Пересылка данных из Meta → в n8n
-    const response = await fetch('https://n8n.vadiimi.com/webhook-test/whatsapp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
-    });
+    const response = await fetch('https://n8n.vadiimi.com/webhook/whatsapp', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(req.body)
+});
 
     if (response.ok) {
       console.log('✅ Успешно переслано в n8n');
