@@ -1,45 +1,41 @@
-// Импорт зависимостей
+// Импорт Express.js
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 require('dotenv').config();
 
-// Инициализация Express
+// Создать приложение Express
 const app = express();
+
+// Промежуточное ПО для разбора тел JSON
 app.use(express.json());
 
-// Переменные окружения
-const PORT = process.env.PORT || 3000;
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
+// Установить порт и verify_token
+const port = process.env.PORT || 3000;
+const verifyToken = process.env.VERIFY_TOKEN;
+const n8nWebhook = process.env.N8N_WEBHOOK_URL;
 
-// ===== Проверка Webhook (GET от Meta) =====
+// Маршрут для GET-запросов (проверка Webhook от Meta)
 app.get('/', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const challenge = req.query['hub.challenge'];
-  const token = req.query['hub.verify_token'];
+  const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
 
-  console.log('➡️ Проверка Webhook:', req.query);
-
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('✅ WEBHOOK VERIFIED');
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('✅ WEBHOOK ПРОВЕРЕН');
     res.status(200).send(challenge);
   } else {
-    console.log('❌ Webhook verification failed');
-    console.log('Expected token:', VERIFY_TOKEN);
-    console.log('Received token:', token);
-    res.sendStatus(403);
+    console.log('❌ Ошибка проверки Webhook');
+    res.status(403).end();
   }
 });
 
-// ===== Прием уведомлений (POST от Meta) =====
+// Маршрут для POST-запросов (прием данных от Meta)
 app.post('/', async (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n📩 Webhook получен ${timestamp}\n`);
   console.log(JSON.stringify(req.body, null, 2));
 
-  // Пересылаем данные из Meta → в n8n
+  // === Добавлено: пересылка в n8n ===
   try {
-    const response = await fetch(N8N_WEBHOOK_URL, {
+    const response = await fetch(n8nWebhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req.body)
@@ -51,13 +47,14 @@ app.post('/', async (req, res) => {
       console.error(`⚠️ Ошибка при пересылке в n8n: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Ошибка при пересылке в n8n:', error.message);
+    console.error('❌ Ошибка пересылки в n8n:', error.message);
   }
+  // === Конец добавления ===
 
-  res.sendStatus(200);
+  res.status(200).end();
 });
 
-// ===== Запуск сервера =====
-app.listen(PORT, () => {
-  console.log(`🚀 Сервер запущен и слушает порт ${PORT}`);
+// Запустить серверное приложение
+app.listen(port, () => {
+  console.log(`\n🚀 Прослушивание порта ${port}\n`);
 });
