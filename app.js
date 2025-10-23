@@ -1,43 +1,45 @@
-// Импорт библиотек
+// Импорт зависимостей
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 require('dotenv').config();
 
-// Создаем приложение
+// Инициализация Express
 const app = express();
 app.use(express.json());
 
-// Настройки из .env
-const port = process.env.PORT || 3000;
-const verifyToken = process.env.VERIFY_TOKEN;
-const n8nWebhook = process.env.N8N_WEBHOOK_URL;
+// Переменные окружения
+const PORT = process.env.PORT || 3000;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 
-// Проверка Webhook (GET-запрос от Meta)
+// ===== Проверка Webhook (GET от Meta) =====
 app.get('/', (req, res) => {
   const mode = req.query['hub.mode'];
   const challenge = req.query['hub.challenge'];
   const token = req.query['hub.verify_token'];
 
-  if (mode === 'subscribe' && token === verifyToken) {
+  console.log('➡️ Проверка Webhook:', req.query);
+
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('✅ WEBHOOK VERIFIED');
     res.status(200).send(challenge);
   } else {
     console.log('❌ Webhook verification failed');
-    console.log('Expected token:', verifyToken);
+    console.log('Expected token:', VERIFY_TOKEN);
     console.log('Received token:', token);
     res.sendStatus(403);
   }
 });
 
-// Прием сообщений от Meta (POST)
+// ===== Прием уведомлений (POST от Meta) =====
 app.post('/', async (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n📩 Webhook получен ${timestamp}\n`);
   console.log(JSON.stringify(req.body, null, 2));
 
-  // Пересылаем данные в n8n
+  // Пересылаем данные из Meta → в n8n
   try {
-    const response = await fetch(n8nWebhook, {
+    const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req.body)
@@ -52,11 +54,10 @@ app.post('/', async (req, res) => {
     console.error('❌ Ошибка при пересылке в n8n:', error.message);
   }
 
-  // Отвечаем Meta, что всё ок
-  res.status(200).end();
+  res.sendStatus(200);
 });
 
-// Запуск сервера
-app.listen(port, () => {
-  console.log(`🚀 Сервер запущен и слушает порт ${port}`);
+// ===== Запуск сервера =====
+app.listen(PORT, () => {
+  console.log(`🚀 Сервер запущен и слушает порт ${PORT}`);
 });
