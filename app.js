@@ -15,7 +15,7 @@ const verifyToken = process.env.VERIFY_TOKEN;
 const n8nWebhook = process.env.N8N_WEBHOOK_URL;
 
 // Маршрут для GET-запросов (проверка Webhook от Meta)
-app.get('/', (req, res) => {
+app.get(['/','/webhook'], (req, res) => {
   const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
 
   if (mode === 'subscribe' && token === verifyToken) {
